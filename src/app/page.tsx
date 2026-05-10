@@ -10,11 +10,16 @@ import {
   ArrowRight,
   MessageCircle,
   ShieldCheck,
-  Zap
+  Zap,
+  Menu,
+  X
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function Home() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-mesh overflow-hidden">
       {/* Navbar */}
@@ -22,18 +27,18 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="bg-peach p-2 rounded-xl">
-              <BookOpen className="text-white h-6 w-6" />
+              <BookOpen className="text-white h-5 w-5 md:h-6 md:w-6" />
             </div>
-            <span className="text-2xl font-bold text-gradient">AmbisCircle</span>
+            <span className="text-xl md:text-2xl font-bold text-gradient">AmbisCircle</span>
           </div>
           
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+          <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-600">
             <Link href="#features" className="hover:text-peach transition-colors">Fitur</Link>
             <Link href="#about" className="hover:text-peach transition-colors">Tentang</Link>
             <Link href="#recommendations" className="hover:text-peach transition-colors">Rekomendasi</Link>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4">
             <Link href="/login">
               <Button variant="ghost">Masuk</Button>
             </Link>
@@ -41,7 +46,37 @@ export default function Home() {
               <Button>Daftar Sekarang</Button>
             </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button 
+            className="md:hidden p-2 text-gray-600"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X /> : <Menu />}
+          </button>
         </div>
+
+        {/* Mobile Dropdown */}
+        {isMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="md:hidden absolute top-full left-0 w-full bg-white/90 backdrop-blur-xl border-t border-gray-100 p-6 space-y-4 shadow-xl"
+          >
+            <Link href="#features" onClick={() => setIsMenuOpen(false)} className="block text-lg font-bold text-gray-800">Fitur</Link>
+            <Link href="#about" onClick={() => setIsMenuOpen(false)} className="block text-lg font-bold text-gray-800">Tentang</Link>
+            <Link href="#recommendations" onClick={() => setIsMenuOpen(false)} className="block text-lg font-bold text-gray-800">Rekomendasi</Link>
+            <hr className="border-gray-100" />
+            <div className="grid grid-cols-2 gap-4">
+              <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                <Button variant="outline" className="w-full text-sm">Masuk</Button>
+              </Link>
+              <Link href="/register" onClick={() => setIsMenuOpen(false)}>
+                <Button className="w-full text-sm">Daftar</Button>
+              </Link>
+            </div>
+          </motion.div>
+        )}
       </nav>
 
       {/* Hero Section */}
