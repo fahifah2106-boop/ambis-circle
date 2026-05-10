@@ -96,7 +96,7 @@ export default function Home() {
               Tanpa Drama. ✨
             </h1>
             <p className="text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">
-              Temukan partner nugas, temen belajar bareng, sampe circle produktif yang sefrekuensi sama minat kamu. Belajar lebih seru, nugas jadi ringan! 🚀
+              Cari bestie nugas atau circle produktif yang sefrekuensi sama vibe lo. Belajar makin sat-set, nugas auto enteng tanpa drama burnout! 🚀🔥
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/register">
