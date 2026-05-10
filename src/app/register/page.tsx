@@ -119,6 +119,28 @@ export default function RegisterPage() {
           </Button>
         </form>
 
+        <div className="mt-8 space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-200"></span>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white/50 px-2 text-gray-500 backdrop-blur-sm">Atau daftar dengan</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <button className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95">
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
+              Google
+            </button>
+            <button className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95">
+              <img src="https://assets-global.website-files.com/6257adef93867e3d0394e366/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" alt="Discord" className="h-4 w-4" />
+              Discord
+            </button>
+          </div>
+        </div>
+
         <p className="text-center mt-8 text-sm text-gray-500">
           Sudah punya akun?{" "}
           <Link href="/login" className="font-bold text-peach hover:underline">
