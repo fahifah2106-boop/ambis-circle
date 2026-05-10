@@ -66,10 +66,10 @@ export default function AuthPage() {
         >
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-              {isLogin ? "Halo Lagi! 👋" : "Gabung Yuk! 🚀"}
+              {isLogin ? "Halo, Selamat Datang! 👋" : "Gabung AmbisCircle! 🚀"}
             </h1>
             <p className="text-gray-500 text-sm">
-              {isLogin ? "Udah siap buat produktif hari ini?" : "Cari circle ambis kamu dan mulai berprogres."}
+              {isLogin ? "Yuk, lanjut produktif bareng circle kamu." : "Cari circle ambis kamu dan mulai berprogres sekarang."}
             </p>
           </div>
 
