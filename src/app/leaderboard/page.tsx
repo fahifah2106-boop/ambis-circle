@@ -2,7 +2,7 @@
 
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { motion } from "framer-motion";
-import { Trophy, Medal, Crown, Star, Flame, Users, ArrowUpRight } from "lucide-react";
+import { Trophy, Medal, Crown, Star, Flame, Users, ArrowUpRight, Target, Award } from "lucide-react";
 import { Button } from "@/components/ui/Form";
 
 export default function LeaderboardPage() {
