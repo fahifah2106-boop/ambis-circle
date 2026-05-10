@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-peach: #FF8E7E;
+  --color-lavender: #A78BFA;
+  --color-yellow-pastel: #FDE68A;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply antialiased text-gray-900 overflow-x-hidden bg-[#FDF8F3];
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(255, 142, 126, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(167, 139, 250, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(253, 230, 138, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(255, 142, 126, 0.05) 0px, transparent 50%);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-peach via-orange-400 to-lavender;
+}
+
+.glass {
+  @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl;
+}
+
+.shadow-soft {
+  box-shadow: 0 20px 50px rgba(255, 142, 126, 0.08);
+}
+
+.bg-mesh {
+  background: 
+    radial-gradient(circle at 50% 0%, rgba(255, 142, 126, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(167, 139, 250, 0.03) 0%, transparent 50%);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-peach/20 rounded-full hover:bg-peach/40 transition-colors;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Button Pulse */
+.btn-pulse {
+  position: relative;
+}
+
+.btn-pulse::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  @apply border-2 border-peach/50;
+  animation: pulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; }
 }
