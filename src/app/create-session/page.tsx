@@ -37,49 +37,71 @@ export default function CreateSessionPage() {
     }
 
     setLoading(true);
-    const loadingToast = toast.loading("Sedang meracik circle baru kamu... 🪄");
-
+    let loadingToastId: any = null;
+    
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        loadingToastId = toast.loading("Sedang meracik circle baru kamu... 🪄");
         
-        if (!user) {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+            console.error("Auth Error:", userError);
             toast.error("Kamu harus login dulu ya!");
             router.push("/login");
             return;
         }
 
-        // Get profile name
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .single();
+        console.log("Creating circle for user:", user.id);
 
-        const { error } = await supabase
+        // Get profile name safely
+        let displayName = user.email?.split('@')[0] || "Si Ambis";
+        try {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .maybeSingle();
+            
+            if (profile?.full_name) {
+                displayName = profile.full_name;
+            }
+        } catch (pErr) {
+            console.warn("Could not fetch profile name, using fallback:", pErr);
+        }
+
+        const { error: insertError } = await supabase
             .from('circles')
             .insert([
                 {
                     title: formData.title,
                     category: formData.category,
                     creator_id: user.id,
-                    creator_name: profile?.full_name || user.email?.split('@')[0] || "Si Ambis",
+                    creator_name: displayName,
                     members: 1,
-                    max_members: formData.maxMembers,
-                    type: formData.type,
+                    max_members: formData.maxMembers || 10,
+                    type: formData.type || 'Public',
                     status: 'Healthy'
                 }
             ]);
 
-        if (error) throw error;
+        if (insertError) {
+            console.error("Database Insert Error:", insertError);
+            throw insertError;
+        }
 
         toast.success(`Circle "${formData.title}" berhasil dibuat! 🎉`);
-        router.push(`/chat?room=${encodeURIComponent(formData.title)}`);
+        
+        // Wait a bit before redirecting to ensure toast is seen and state is stable
+        setTimeout(() => {
+            router.push(`/chat?room=${encodeURIComponent(formData.title)}`);
+        }, 800);
+
     } catch (error: any) {
-        console.error("Create Circle Error:", error);
-        toast.error(error.message || "Gagal membuat circle");
+        console.error("Circle Creation Crash:", error);
+        toast.error("Gagal: " + (error.message || "Terjadi kesalahan sistem"));
     } finally {
         setLoading(false);
-        toast.dismiss(loadingToast);
+        if (loadingToastId) toast.dismiss(loadingToastId);
     }
   };
 
