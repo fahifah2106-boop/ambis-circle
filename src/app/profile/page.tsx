@@ -13,49 +13,144 @@ import {
   LogOut,
   ChevronRight,
   ShieldCheck,
-  Star
+  Star,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [user, setUser] = useState<any>(null);
   
   const [profile, setProfile] = useState({
-    name: "User Ambis",
-    username: "userambis_2026",
-    bio: "Lagi fokus belajar React dan UI Design. Yuk nugas bareng!",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=user"
+    name: "",
+    username: "",
+    bio: "",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=user",
+    email: ""
   });
 
-  const handleUpdate = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      setUser(user);
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (data) {
+        setProfile({
+          name: data.full_name || "",
+          username: data.username || user.email?.split('@')[0] || "",
+          bio: data.bio || "Lagi fokus belajar produktif bareng AmbisCircle!",
+          avatar: data.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+          email: user.email || ""
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Profil berhasil diperbarui! ✨");
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profile.name,
+          username: profile.username,
+          bio: profile.bio,
+          avatar_url: profile.avatar
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      toast.success("Profil berhasil diperbarui! ✨");
+    } catch (error: any) {
+      toast.error(error.message || "Gagal memperbarui profil");
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const handleLogout = () => {
-      toast.info("Logging out...");
-      setTimeout(() => router.push("/"), 1000);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.info("Berhasil keluar...");
+    router.push("/");
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && user) {
       if (file.size > 2 * 1024 * 1024) {
         toast.error("File terlalu besar! Maksimal 2MB.");
         return;
       }
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile(prev => ({ ...prev, avatar: reader.result as string }));
+      setUpdating(true);
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        setProfile(prev => ({ ...prev, avatar: publicUrl }));
+        
+        // Save to DB immediately
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: publicUrl })
+          .eq('id', user.id);
+
         toast.success("Foto profil berhasil diunggah! 📸");
-      };
-      reader.readAsDataURL(file);
+      } catch (error: any) {
+        toast.error(error.message || "Gagal mengunggah foto");
+      } finally {
+        setUpdating(false);
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="h-[60vh] flex flex-col items-center justify-center space-y-4">
+          <Loader2 className="h-12 w-12 text-peach animate-spin" />
+          <p className="text-gray-500 font-medium italic">Menyiapkan profil ambismu...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -75,7 +170,8 @@ export default function ProfilePage() {
                         </div>
                         <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className="absolute bottom-1 right-1 p-3 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-peach hover:text-white transition-all transform hover:scale-110 active:scale-90"
+                            disabled={updating}
+                            className="absolute bottom-1 right-1 p-3 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-peach hover:text-white transition-all transform hover:scale-110 active:scale-90 disabled:opacity-50"
                         >
                             <Camera className="h-5 w-5" />
                         </button>
@@ -88,7 +184,7 @@ export default function ProfilePage() {
                         />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">{profile.name}</h2>
+                        <h2 className="text-xl font-bold text-gray-800">{profile.name || "Si Ambis"}</h2>
                         <p className="text-sm text-gray-500">@{profile.username}</p>
                     </div>
                     <div className="flex justify-center gap-2">
@@ -136,7 +232,7 @@ export default function ProfilePage() {
                         />
                     </div>
                     
-                    <Input label="Email" type="email" defaultValue="user@ambis.com" disabled />
+                    <Input label="Email" type="email" value={profile.email} disabled />
                     
                     <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-gray-700 ml-1">Bio</label>
@@ -147,7 +243,9 @@ export default function ProfilePage() {
                         ></textarea>
                     </div>
 
-                    <Button type="submit" className="w-full md:w-auto px-10">Simpan Perubahan ✨</Button>
+                    <Button type="submit" disabled={updating} className="w-full md:w-auto px-10">
+                        {updating ? "Menyimpan..." : "Simpan Perubahan ✨"}
+                    </Button>
                 </form>
 
                 <div className="glass p-8 rounded-[2.5rem] space-y-6">

@@ -12,23 +12,72 @@ import {
   Users,
   Calendar,
   ChevronRight,
-  Flag
+  Flag,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { toast, Toaster } from "sonner";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function UserDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("Si Ambis");
+  const [sessions, setSessions] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      // Fetch User Profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile?.full_name) {
+          setUserName(profile.full_name);
+        }
+      }
+
+      // Fetch Real Sessions
+      const { data: circles } = await supabase
+        .from('circles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(6);
+      
+      if (circles) {
+        setSessions(circles);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const stats = [
-    { label: "Sesi Diikuti", value: "12", icon: Calendar, color: "bg-peach" },
-    { label: "Circle Aktif", value: "3", icon: Users, color: "bg-lavender" },
+    { label: "Sesi Diikuti", value: "0", icon: Calendar, color: "bg-peach" },
+    { label: "Circle Aktif", value: sessions.length.toString(), icon: Users, color: "bg-lavender" },
     { label: "Level Ambis", value: "Pro", icon: Award, color: "bg-yellow-400" },
   ];
 
-  const recommendedSessions = [
-    { id: 1, title: "Belajar React Bareng", category: "Coding", time: "19:00 WIB", tags: ["React", "Frontend"] },
-    { id: 2, title: "Nugas Kalkulus II", category: "Edukasi", time: "15:30 WIB", tags: ["Math", "Kampus"] },
-    { id: 3, title: "Coworking Online", category: "Produktif", time: "09:00 WIB", tags: ["Work", "Relax"] },
-  ];
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
+          <Loader2 className="h-12 w-12 text-peach animate-spin" />
+          <p className="text-gray-500 font-medium italic">Sedang menyiapkan dashboard-mu...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -37,8 +86,8 @@ export default function UserDashboard() {
         {/* Welcome Section */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Halo, User Ambis! 👋</h1>
-            <p className="text-gray-500">Siap ngerjain apa hari ini? Ada 15 sesi baru yang cocok buat kamu.</p>
+            <h1 className="text-3xl font-extrabold text-gray-900">Halo, {userName}! 👋</h1>
+            <p className="text-gray-500">Siap ngerjain apa hari ini? Ada {sessions.length} sesi baru yang bisa kamu ikuti.</p>
           </div>
           <Link href="/create-session">
             <Button className="w-full md:w-auto shadow-xl">
@@ -57,9 +106,6 @@ export default function UserDashboard() {
               transition={{ delay: i * 0.1 }}
               whileHover={{ scale: 1.02, y: -5 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                import('sonner').then(({ toast }) => toast.info(`Detail ${stat.label} akan muncul di sini.`));
-              }}
               className="glass p-6 rounded-3xl flex items-center gap-6 text-left w-full transition-all border-none"
             >
               <div className={`${stat.color} p-4 rounded-2xl text-white shadow-lg`}>
@@ -85,7 +131,7 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recommendedSessions.map((session, i) => (
+            {sessions.map((session, i) => (
               <motion.div 
                 key={session.id}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -99,26 +145,14 @@ export default function UserDashboard() {
                     <span className="px-3 py-1 rounded-full bg-peach/10 text-peach text-[10px] font-bold uppercase tracking-wider">
                       {session.category}
                     </span>
-                    <button 
-                        onClick={() => toast.warning(`Circle "${session.title}" telah dilaporkan.`)}
-                        className="p-1 text-gray-300 hover:text-red-400 transition-colors"
-                        title="Laporkan"
-                    >
-                        <Flag className="h-3 w-3" />
-                    </button>
                   </div>
                   <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold">
-                    <Clock className="h-3 w-3" /> {session.time}
+                    <Clock className="h-3 w-3" /> {new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
                 
-                <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-peach transition-colors">{session.title}</h3>
-                
-                <div className="flex gap-2 mb-6 flex-wrap">
-                  {session.tags.map(tag => (
-                    <span key={tag} className="text-[10px] text-gray-400">#{tag}</span>
-                  ))}
-                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-peach transition-colors line-clamp-1">{session.title}</h3>
+                <p className="text-xs text-gray-400 mb-4 italic">Dibuat oleh {session.creator_name || "Si Ambis"}</p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                   <div className="flex -space-x-2">
@@ -128,7 +162,7 @@ export default function UserDashboard() {
                       </div>
                     ))}
                     <div className="h-7 w-7 rounded-full border-2 border-white bg-peach/10 text-peach text-[8px] font-bold flex items-center justify-center">
-                      +5
+                      +{session.members || 1}
                     </div>
                   </div>
                   <Button 
@@ -136,12 +170,10 @@ export default function UserDashboard() {
                     size="sm" 
                     className="rounded-xl group-hover:bg-peach group-hover:text-white transition-all"
                     onClick={() => {
-                        import('sonner').then(({ toast }) => {
-                            toast.success(`Berhasil join ke sesi ${session.title}! Mengalihkan ke Chat Room...`);
-                            setTimeout(() => {
-                                window.location.href = `/chat?room=${encodeURIComponent(session.title)}`;
-                            }, 1000);
-                        });
+                      toast.success(`Berhasil join ke sesi ${session.title}!`);
+                      setTimeout(() => {
+                        window.location.href = `/chat?room=${encodeURIComponent(session.title)}`;
+                      }, 1000);
                     }}
                   >
                     Join
@@ -150,18 +182,19 @@ export default function UserDashboard() {
               </motion.div>
             ))}
           </div>
-        </section>
 
-        {/* Empty State Mock */}
-        <section className="bg-white/40 border-2 border-dashed border-gray-200 rounded-[2rem] p-12 text-center">
-             <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+          {sessions.length === 0 && (
+            <div className="bg-white/40 border-2 border-dashed border-gray-200 rounded-[2rem] p-12 text-center">
+              <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <Search className="text-gray-400 h-10 w-10" />
-             </div>
-             <h3 className="text-lg font-bold text-gray-800">Cari Circle Lainnya?</h3>
-             <p className="text-sm text-gray-500 max-w-xs mx-auto mt-2">Masih banyak circle produktif yang nungguin kamu buat join. Cek halaman eksplor yuk!</p>
-             <Link href="/explore">
-                <Button variant="ghost" className="mt-6">Buka Halaman Eksplor</Button>
-             </Link>
+              </div>
+              <h3 className="text-lg font-bold text-gray-800">Belum ada circle yang aktif</h3>
+              <p className="text-sm text-gray-500 max-w-xs mx-auto mt-2">Jadilah yang pertama membuat circle produktif hari ini!</p>
+              <Link href="/create-session">
+                <Button className="mt-6">Buat Sesi Sekarang</Button>
+              </Link>
+            </div>
+          )}
         </section>
       </div>
     </DashboardLayout>
