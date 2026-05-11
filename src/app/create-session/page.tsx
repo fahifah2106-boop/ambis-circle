@@ -44,9 +44,16 @@ export default function CreateSessionPage() {
         
         if (!user) {
             toast.error("Kamu harus login dulu ya!");
-            router.push("/");
+            router.push("/login");
             return;
         }
+
+        // Get profile name
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
 
         const { error } = await supabase
             .from('circles')
@@ -55,8 +62,10 @@ export default function CreateSessionPage() {
                     title: formData.title,
                     category: formData.category,
                     creator_id: user.id,
-                    creator_name: user.user_metadata.full_name || "Anonymous",
+                    creator_name: profile?.full_name || user.email?.split('@')[0] || "Si Ambis",
                     members: 1,
+                    max_members: formData.maxMembers,
+                    type: formData.type,
                     status: 'Healthy'
                 }
             ]);
@@ -66,6 +75,7 @@ export default function CreateSessionPage() {
         toast.success(`Circle "${formData.title}" berhasil dibuat! 🎉`);
         router.push(`/chat?room=${encodeURIComponent(formData.title)}`);
     } catch (error: any) {
+        console.error("Create Circle Error:", error);
         toast.error(error.message || "Gagal membuat circle");
     } finally {
         setLoading(false);
