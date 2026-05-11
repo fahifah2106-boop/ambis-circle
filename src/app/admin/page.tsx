@@ -37,22 +37,22 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-10">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* Stats Grid - Laptop-like 3 columns even on mobile */}
+      <div className="grid grid-cols-3 gap-3 md:gap-8">
         {stats.map((stat, i) => (
           <motion.div 
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white/70 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/50 shadow-soft group hover:bg-white transition-all duration-500 relative overflow-hidden"
+            className="bg-white/70 backdrop-blur-md p-3 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-white/50 shadow-soft group hover:bg-white transition-all duration-500 relative overflow-hidden"
           >
             <div className="flex justify-between items-start relative z-10">
-              <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.color} text-white shadow-lg ${stat.shadow} group-hover:scale-110 transition-transform duration-500`}>
-                <stat.icon className="h-6 w-6" />
+              <div className={`p-2 md:p-4 rounded-lg md:rounded-2xl bg-gradient-to-br ${stat.color} text-white shadow-lg ${stat.shadow} group-hover:scale-110 transition-transform duration-500`}>
+                <stat.icon className="h-4 w-4 md:h-6 md:w-6" />
               </div>
               {stat.change && (
-                <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold ${
+                <div className={`hidden sm:flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold ${
                     stat.change.startsWith('+') ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
                 }`}>
                   {stat.change.startsWith('+') ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -61,9 +61,9 @@ export default function AdminDashboard() {
               )}
             </div>
             
-            <div className="mt-6 relative z-10">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">{stat.label}</h3>
-                <p className="text-4xl font-black text-gray-900 mt-1 tracking-tight">{stat.value}</p>
+            <div className="mt-3 md:mt-6 relative z-10">
+                <h3 className="text-[8px] md:text-sm font-bold text-gray-400 uppercase tracking-widest">{stat.label}</h3>
+                <p className="text-lg md:text-4xl font-black text-gray-900 mt-0.5 md:mt-1 tracking-tight leading-none">{stat.value}</p>
             </div>
 
             {/* Decorative background circle */}

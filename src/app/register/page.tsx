@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Toaster, toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,6 +19,22 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : '',
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error(error.message || "Gagal login dengan Google");
+      setIsLoading(false);
+    }
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,14 +73,16 @@ export default function RegisterPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-lg glass p-8 md:p-12 rounded-[2.5rem] shadow-glass"
       >
+        {/* Logo Moved Inside Card */}
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <div className="bg-peach p-2.5 rounded-2xl shadow-lg">
+            <BookOpen className="text-white h-6 w-6" />
+          </div>
+          <span className="text-xl font-bold text-gray-900 tracking-tight">AmbisCircle</span>
+        </div>
+
         <div className="text-center mb-10">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="bg-peach p-2 rounded-xl">
-              <BookOpen className="text-white h-5 w-5" />
-            </div>
-            <span className="text-xl font-bold text-gray-800">AmbisCircle</span>
-          </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900">Buat Akun Baru 📝</h1>
+          <h1 className="text-xl font-extrabold text-gray-900">Buat Akun Baru 📝</h1>
           <p className="text-gray-500 mt-2">Gabung ke circle produktif favoritmu sekarang.</p>
         </div>
 
@@ -130,11 +149,15 @@ export default function RegisterPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95">
+            <button 
+              type="button"
+              onClick={handleGoogleLogin}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95"
+            >
               <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
               Google
             </button>
-            <button className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95">
+            <button type="button" className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95">
               <img src="https://assets-global.website-files.com/6257adef93867e3d0394e366/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" alt="Discord" className="h-4 w-4" />
               Discord
             </button>

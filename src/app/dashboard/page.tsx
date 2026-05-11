@@ -35,7 +35,7 @@ export default function UserDashboard() {
       <Toaster position="top-right" richColors />
       <div className="max-w-6xl mx-auto space-y-8 pb-24 lg:pb-0">
         {/* Welcome Section */}
-        <header className="flex flex-col md:row justify-between items-start md:items-center gap-4">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900">Halo, User Ambis! 👋</h1>
             <p className="text-gray-500">Siap ngerjain apa hari ini? Ada 15 sesi baru yang cocok buat kamu.</p>

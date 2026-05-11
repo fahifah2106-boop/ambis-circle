@@ -9,10 +9,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Mengabaikan linting saat build agar lebih cepat (opsional)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   }
