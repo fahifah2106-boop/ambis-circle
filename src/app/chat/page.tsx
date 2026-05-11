@@ -14,71 +14,103 @@ function ChatContent() {
   const roomParam = searchParams.get("room");
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeRoom, setActiveRoom] = useState(roomParam || "Nugas Kalkulus");
-  const [messages, setMessages] = useState<Record<string, any[]>>({
-    "Nugas Kalkulus": [
-      { id: 1, sender: "Budi", content: "Halo guys! Jadi nugas jam berapa?", time: "14:20", self: false },
-      { id: 2, sender: "Siti", content: "Jam 15:00 aja gimana? Aku baru selesai kelas.", time: "14:22", self: false },
-      { id: 3, sender: "Kamu", content: "Gaspol! Jam 15:00 ya.", time: "14:25", self: true },
-    ],
-    "Belajar React": [
-      { id: 1, sender: "Andi", content: "Ada yang tau cara pake server actions?", time: "10:00", self: false },
-      { id: 2, sender: "Kamu", content: "Coba cek dokumentasi Next.js terbaru bro.", time: "10:05", self: true },
-    ],
-    "Gym Circle": [
-      { id: 1, sender: "Rina", content: "Besok pagi jam 6 jadi ya di GOR?", time: "19:00", self: false },
-    ]
-  });
-
+  const [activeRoom, setActiveRoom] = useState(roomParam || "General");
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [rooms, setRooms] = useState<string[]>(["General", "Belajar Bareng", "Diskusi Tugas"]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-hide sidebar on mobile if a room is selected from URL
   useEffect(() => {
-    if (roomParam && window.innerWidth < 768) {
-        setIsSidebarOpen(false);
+    fetchUser();
+    if (roomParam) {
+      setActiveRoom(roomParam);
+      if (!rooms.includes(roomParam)) {
+        setRooms(prev => [roomParam, ...prev]);
+      }
     }
   }, [roomParam]);
 
-  // If room doesn't exist in messages, initialize it
   useEffect(() => {
-    if (activeRoom && !messages[activeRoom]) {
-        setMessages(prev => ({
-            ...prev,
-            [activeRoom]: [{ id: 0, sender: "System", content: `Selamat datang di room ${activeRoom}!`, time: "Now", self: false }]
-        }));
+    if (activeRoom) {
+      fetchMessages();
+      const channel = subscribeToMessages();
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [activeRoom]);
 
-  // Update active room if param changes
-  useEffect(() => {
-    if (roomParam) setActiveRoom(roomParam);
-  }, [roomParam]);
+  const fetchUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      setCurrentUser({ ...user, full_name: profile?.full_name || user.email?.split('@')[0] });
+    }
+  };
 
-  const handleSend = (e: React.FormEvent) => {
+  const fetchMessages = async () => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('room_name', activeRoom)
+      .order('created_at', { ascending: true });
+    
+    if (data) setMessages(data);
+    if (error) console.error("Error fetching messages:", error);
+  };
+
+  const subscribeToMessages = () => {
+    const channel = supabase
+      .channel(`room-${activeRoom}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `room_name=eq.${activeRoom}`,
+        },
+        (payload) => {
+          setMessages((current) => [...current, payload.new]);
+        }
+      )
+      .subscribe();
+    
+    return channel;
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !currentUser) return;
 
-    const newMessage = {
-      id: Date.now(),
-      sender: "Kamu",
-      content: input,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      self: true,
-    };
-
-    setMessages(prev => ({
-      ...prev,
-      [activeRoom]: [...(prev[activeRoom] || []), newMessage]
-    }));
+    const messageContent = input.trim();
     setInput("");
+
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        room_name: activeRoom,
+        user_id: currentUser.id,
+        user_name: currentUser.full_name,
+        content: messageContent,
+      });
+
+    if (error) {
+      toast.error("Gagal mengirim pesan");
+      console.error(error);
+    }
   };
 
   useEffect(() => {
     if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, activeRoom]);
+  }, [messages]);
 
   const selectRoom = (room: string) => {
     setActiveRoom(room);
@@ -101,7 +133,7 @@ function ChatContent() {
             </div>
 
             <div className="flex-1 glass rounded-[2rem] md:rounded-3xl p-2 space-y-1 overflow-y-auto mx-2 md:mx-0 shadow-lg md:shadow-none">
-                {Object.keys(messages).map((room) => (
+                {rooms.map((room) => (
                     <button 
                         key={room} 
                         onClick={() => selectRoom(room)}
@@ -124,7 +156,7 @@ function ChatContent() {
                                 "text-[10px] truncate",
                                 activeRoom === room ? "text-white/70" : "text-gray-400"
                             )}>
-                                {messages[room][messages[room].length - 1]?.content || "Belum ada pesan"}
+                                Klik untuk bergabung...
                             </p>
                         </div>
                     </button>
@@ -153,20 +185,9 @@ function ChatContent() {
                         <h3 className="font-bold text-gray-800 truncate text-sm md:text-base"># {activeRoom}</h3>
                         <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest flex items-center gap-1">
                            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                           {(messages[activeRoom]?.length || 0) + 2} Online
+                           Real-time Aktif
                         </p>
                     </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button className="p-2 hover:bg-white/50 rounded-xl transition-colors text-gray-400 hidden md:block">
-                        <Users className="h-5 w-5" />
-                    </button>
-                    <button 
-                        onClick={() => toast.info("Pengaturan channel segera hadir!")}
-                        className="p-2 hover:bg-white/50 rounded-xl transition-colors text-gray-400"
-                    >
-                        <MoreVertical className="h-5 w-5" />
-                    </button>
                 </div>
             </header>
 
@@ -176,30 +197,35 @@ function ChatContent() {
                 className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 scroll-smooth"
             >
                 <AnimatePresence initial={false}>
-                    {messages[activeRoom]?.map((msg) => (
-                        <motion.div 
-                            key={msg.id}
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            className={cn(
-                                "flex flex-col group",
-                                msg.self ? 'items-end' : 'items-start'
-                            )}
-                        >
-                            <div className="flex items-center gap-2 mb-1">
-                                {!msg.self && <span className="text-[10px] font-bold text-gray-400 ml-1">{msg.sender}</span>}
-                                <span className="text-[8px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">{msg.time}</span>
-                            </div>
-                            <div className={cn(
-                                "max-w-[85%] md:max-w-[80%] px-4 py-2.5 md:py-3 rounded-2xl text-sm shadow-sm transition-all",
-                                msg.self 
-                                    ? "bg-peach text-white rounded-tr-none hover:brightness-105" 
-                                    : "bg-white text-gray-700 rounded-tl-none border border-white/50 hover:bg-gray-50"
-                            )}>
-                                {msg.content}
-                            </div>
-                        </motion.div>
-                    ))}
+                    {messages.map((msg) => {
+                        const isSelf = msg.user_id === currentUser?.id;
+                        return (
+                            <motion.div 
+                                key={msg.id}
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                className={cn(
+                                    "flex flex-col group",
+                                    isSelf ? 'items-end' : 'items-start'
+                                )}
+                            >
+                                <div className="flex items-center gap-2 mb-1">
+                                    {!isSelf && <span className="text-[10px] font-bold text-gray-400 ml-1">{msg.user_name}</span>}
+                                    <span className="text-[8px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                                <div className={cn(
+                                    "max-w-[85%] md:max-w-[80%] px-4 py-2.5 md:py-3 rounded-2xl text-sm shadow-sm transition-all",
+                                    isSelf 
+                                        ? "bg-peach text-white rounded-tr-none hover:brightness-105" 
+                                        : "bg-white text-gray-700 rounded-tl-none border border-white/50 hover:bg-gray-50"
+                                )}>
+                                    {msg.content}
+                                </div>
+                            </motion.div>
+                        );
+                    })}
                 </AnimatePresence>
             </div>
 

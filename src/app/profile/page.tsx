@@ -103,8 +103,8 @@ export default function ProfilePage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && user) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("File terlalu besar! Maksimal 2MB.");
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File terlalu besar! Maksimal 5MB.");
         return;
       }
       
