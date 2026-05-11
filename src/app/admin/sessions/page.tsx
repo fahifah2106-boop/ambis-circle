@@ -16,16 +16,52 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Form";
 
-export default function ModerateCircles() {
-  const activeCircles = [
-    { id: 1, title: "Nugas Kalkulus II", creator: "Budi S.", members: 8, reports: 0, status: "Healthy" },
-    { id: 2, title: "Main Game Terus", creator: "Siti A.", members: 15, reports: 5, status: "Warning" },
-    { id: 3, title: "Belajar React Bareng", creator: "Andi W.", members: 12, reports: 0, status: "Healthy" },
-    { id: 4, title: "Spam Link Gak Jelas", creator: "Anonim", members: 2, reports: 12, status: "Critical" },
-  ];
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
-  const handleDeleteCircle = (title: string) => {
-    toast.error(`Circle "${title}" telah dihapus karena melanggar aturan.`);
+export default function ModerateCircles() {
+  const router = useRouter();
+  const [circles, setCircles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCircles();
+  }, []);
+
+  const fetchCircles = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('circles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setCircles(data || []);
+    } catch (error: any) {
+      toast.error("Gagal mengambil data circle");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCircle = async (id: number, title: string) => {
+    if (!confirm(`Yakin ingin menghapus circle "${title}"?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('circles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setCircles(circles.filter(c => c.id !== id));
+      toast.error(`Circle "${title}" telah dihapus.`);
+    } catch (error: any) {
+      toast.error("Gagal menghapus circle: " + error.message);
+    }
   };
 
   return (
@@ -52,83 +88,89 @@ export default function ModerateCircles() {
 
       {/* Circle List */}
       <div className="grid grid-cols-1 gap-6">
-        {activeCircles.map((circle, i) => (
-          <motion.div 
-            key={circle.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className={`group bg-white/70 backdrop-blur-md p-8 rounded-[2.5rem] border-2 transition-all duration-500 flex flex-col lg:flex-row justify-between items-center gap-8 ${
-                circle.status === 'Critical' ? 'border-red-200 bg-red-50/30' : 'border-white/50'
-            } hover:shadow-xl hover:shadow-peach/5 hover:bg-white`}
-          >
-            {/* Circle Info */}
-            <div className="flex items-center gap-6 flex-1 w-full">
-              <div className={`h-16 w-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110 ${
-                circle.status === 'Healthy' ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-green-200' : 
-                circle.status === 'Warning' ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-white shadow-yellow-200' : 
-                'bg-gradient-to-br from-red-400 to-pink-600 text-white shadow-red-200'
-              }`}>
-                {circle.status === 'Healthy' ? <CheckCircle2 className="h-8 w-8" /> : 
-                 circle.status === 'Warning' ? <AlertTriangle className="h-8 w-8" /> : 
-                 <ShieldAlert className="h-8 w-8" />}
-              </div>
-              <div className="overflow-hidden">
-                <h4 className="text-xl font-black text-gray-900 tracking-tight truncate">{circle.title}</h4>
-                <div className="flex items-center gap-3 mt-1">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">
-                        <Users className="h-3.5 w-3.5" /> {circle.members} Peserta
-                    </div>
-                    <p className="text-xs font-medium text-gray-400 italic">Dibuat oleh <span className="text-peach font-bold">{circle.creator}</span></p>
+        {loading ? (
+          <div className="p-20 text-center text-gray-400 font-bold bg-white/40 rounded-[2.5rem]">Sedang mengambil data circle... 🪄</div>
+        ) : circles.length === 0 ? (
+          <div className="p-20 text-center text-gray-400 font-bold bg-white/40 rounded-[2.5rem]">Belum ada circle yang dibuat.</div>
+        ) : (
+          circles.map((circle, i) => (
+            <motion.div 
+              key={circle.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={`group bg-white/70 backdrop-blur-md p-8 rounded-[2.5rem] border-2 transition-all duration-500 flex flex-col lg:flex-row justify-between items-center gap-8 ${
+                  circle.status === 'Critical' ? 'border-red-200 bg-red-50/30' : 'border-white/50'
+              } hover:shadow-xl hover:shadow-peach/5 hover:bg-white`}
+            >
+              {/* Circle Info */}
+              <div className="flex items-center gap-6 flex-1 w-full">
+                <div className={`h-16 w-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110 ${
+                  circle.status === 'Healthy' ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-green-200' : 
+                  circle.status === 'Warning' ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-white shadow-yellow-200' : 
+                  'bg-gradient-to-br from-red-400 to-pink-600 text-white shadow-red-200'
+                }`}>
+                  {circle.status === 'Healthy' ? <CheckCircle2 className="h-8 w-8" /> : 
+                   circle.status === 'Warning' ? <AlertTriangle className="h-8 w-8" /> : 
+                   <ShieldAlert className="h-8 w-8" />}
+                </div>
+                <div className="overflow-hidden">
+                  <h4 className="text-xl font-black text-gray-900 tracking-tight truncate">{circle.title}</h4>
+                  <div className="flex items-center gap-3 mt-1">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">
+                          <Users className="h-3.5 w-3.5" /> {circle.members} Peserta
+                      </div>
+                      <p className="text-xs font-medium text-gray-400 italic">Dibuat oleh <span className="text-peach font-bold">{circle.creator_name || 'Anon'}</span></p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Stats Summary */}
-            <div className="flex items-center gap-10 px-10 border-x border-gray-100/50 w-full lg:w-auto py-4 lg:py-0">
-                <div className="text-center">
-                    <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest mb-1">Reports</p>
-                    <div className={`flex items-center justify-center gap-1.5 text-xl font-black ${circle.reports > 0 ? 'text-red-500' : 'text-gray-300'}`}>
-                        <Flag className={circle.reports > 0 ? "h-5 w-5 animate-bounce" : "h-5 w-5"} /> {circle.reports}
-                    </div>
-                </div>
-                <div className="text-center">
-                    <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest mb-1">Risk Level</p>
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase ${
-                        circle.status === 'Healthy' ? 'bg-green-100 text-green-600' : 
-                        circle.status === 'Warning' ? 'bg-yellow-100 text-yellow-600' : 
-                        'bg-red-500 text-white shadow-lg shadow-red-200'
-                    }`}>
-                        {circle.status}
-                    </span>
-                </div>
-            </div>
+              {/* Stats Summary */}
+              <div className="flex items-center gap-10 px-10 border-x border-gray-100/50 w-full lg:w-auto py-4 lg:py-0">
+                  <div className="text-center">
+                      <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest mb-1">Reports</p>
+                      <div className={`flex items-center justify-center gap-1.5 text-xl font-black ${circle.reports > 0 ? 'text-red-500' : 'text-gray-300'}`}>
+                          <Flag className={circle.reports > 0 ? "h-5 w-5 animate-bounce" : "h-5 w-5"} /> {circle.reports}
+                      </div>
+                  </div>
+                  <div className="text-center">
+                      <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest mb-1">Risk Level</p>
+                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase ${
+                          circle.status === 'Healthy' ? 'bg-green-100 text-green-600' : 
+                          circle.status === 'Warning' ? 'bg-yellow-100 text-yellow-600' : 
+                          'bg-red-500 text-white shadow-lg shadow-red-200'
+                      }`}>
+                          {circle.status}
+                      </span>
+                  </div>
+              </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
-              <button 
-                onClick={() => toast.info("Melihat detail chat circle...")}
-                className="h-12 w-12 bg-white border border-gray-100 text-gray-400 hover:text-peach hover:border-peach hover:shadow-lg hover:shadow-peach/10 rounded-2xl transition-all flex items-center justify-center"
-                title="Lihat Chat"
-              >
-                <MessageSquare className="h-5 w-5" />
-              </button>
-              <button 
-                onClick={() => toast.info("Pengaturan moderasi...")}
-                className="h-12 w-12 bg-white border border-gray-100 text-gray-400 hover:text-lavender hover:border-lavender hover:shadow-lg hover:shadow-lavender/10 rounded-2xl transition-all flex items-center justify-center"
-                title="Opsi Lain"
-              >
-                <MoreVertical className="h-5 w-5" />
-              </button>
-              <button 
-                onClick={() => handleDeleteCircle(circle.title)}
-                className="h-12 px-6 bg-white border border-red-100 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-200 rounded-2xl transition-all flex items-center gap-2 font-bold text-sm"
-              >
-                <Trash2 className="h-5 w-5" /> Hapus
-              </button>
-            </div>
-          </motion.div>
-        ))}
+              {/* Actions */}
+              <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
+                <button 
+                  onClick={() => router.push("/chat")}
+                  className="h-12 w-12 bg-white border border-gray-100 text-gray-400 hover:text-peach hover:border-peach hover:shadow-lg hover:shadow-peach/10 rounded-2xl transition-all flex items-center justify-center"
+                  title="Lihat Chat"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </button>
+                <button 
+                  onClick={() => toast.info("Pengaturan moderasi...")}
+                  className="h-12 w-12 bg-white border border-gray-100 text-gray-400 hover:text-lavender hover:border-lavender hover:shadow-lg hover:shadow-lavender/10 rounded-2xl transition-all flex items-center justify-center"
+                  title="Opsi Lain"
+                >
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button 
+                  onClick={() => handleDeleteCircle(circle.id, circle.title)}
+                  className="h-12 px-6 bg-white border border-red-100 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-200 rounded-2xl transition-all flex items-center gap-2 font-bold text-sm"
+                >
+                  <Trash2 className="h-5 w-5" /> Hapus
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -41,24 +41,62 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate Auth Logic
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
       if (isLogin) {
+        // Real Login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) throw error;
+
         if (formData.email === "admin@ambis.com") {
           toast.success("Welcome back, Admin!");
           router.push("/admin");
-        } else if (formData.email && formData.password.length >= 8) {
+        } else {
           toast.success("Login berhasil!");
           router.push("/dashboard");
-        } else {
-          toast.error("Email atau password salah.");
         }
       } else {
-        toast.success("Akun berhasil dibuat! Silakan masuk.");
+        // Real Registration
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName,
+            }
+          }
+        });
+
+        if (authError) throw authError;
+
+        // Save to profiles table for Admin visibility
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([
+              { 
+                id: authData.user.id, 
+                full_name: formData.fullName, 
+                email: formData.email,
+                role: 'Customer',
+                status: 'Active'
+              }
+            ]);
+          
+          if (profileError) console.error("Error saving profile:", profileError);
+        }
+
+        toast.success("Akun berhasil dibuat! Silakan cek email atau masuk.");
         setIsLogin(true);
       }
-    }, 1500);
+    } catch (error: any) {
+      toast.error(error.message || "Terjadi kesalahan autentikasi");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

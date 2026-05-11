@@ -13,10 +13,11 @@ import {
   Calendar,
   Sparkles
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 export default function CreateSessionPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function CreateSessionPage() {
     maxMembers: 10
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) {
         toast.error("Judul circle gak boleh kosong ya! ❌");
@@ -36,15 +37,40 @@ export default function CreateSessionPage() {
     }
 
     setLoading(true);
-    toast.loading("Sedang meracik circle baru kamu... 🪄");
+    const loadingToast = toast.loading("Sedang meracik circle baru kamu... 🪄");
 
-    setTimeout(() => {
-        setLoading(false);
-        toast.dismiss();
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            toast.error("Kamu harus login dulu ya!");
+            router.push("/");
+            return;
+        }
+
+        const { error } = await supabase
+            .from('circles')
+            .insert([
+                {
+                    title: formData.title,
+                    category: formData.category,
+                    creator_id: user.id,
+                    creator_name: user.user_metadata.full_name || "Anonymous",
+                    members: 1,
+                    status: 'Healthy'
+                }
+            ]);
+
+        if (error) throw error;
+
         toast.success(`Circle "${formData.title}" berhasil dibuat! 🎉`);
-        // Redirect to chat with the new room
         router.push(`/chat?room=${encodeURIComponent(formData.title)}`);
-    }, 2000);
+    } catch (error: any) {
+        toast.error(error.message || "Gagal membuat circle");
+    } finally {
+        setLoading(false);
+        toast.dismiss(loadingToast);
+    }
   };
 
   return (
