@@ -8,6 +8,7 @@ import { Send, Hash, MoreVertical, Search, MessageSquare, Users, ChevronLeft } f
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 function ChatContent() {
   const searchParams = useSearchParams();
