@@ -33,16 +33,23 @@ export default function ModerateCircles() {
 
   const fetchCircles = async () => {
     setLoading(true);
+    console.log("Memulai pengambilan data circle...");
     try {
       const { data, error } = await supabase
         .from('circles')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error:", error);
+        throw error;
+      }
+      
+      console.log("Data berhasil diambil:", data);
       setCircles(data || []);
     } catch (error: any) {
-      toast.error("Gagal mengambil data circle");
+      console.error("Fetch Error:", error);
+      toast.error("Gagal terhubung ke database: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }

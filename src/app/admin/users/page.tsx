@@ -30,16 +30,23 @@ export default function ManageUsers() {
 
   const fetchUsers = async () => {
     setLoading(true);
+    console.log("Memulai pengambilan data user...");
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('joined_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error:", error);
+        throw error;
+      }
+
+      console.log("Data user berhasil diambil:", data);
       setUsers(data || []);
     } catch (error: any) {
-      toast.error("Gagal mengambil data user");
+      console.error("Fetch Error:", error);
+      toast.error("Gagal mengambil data user: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
