@@ -100,6 +100,7 @@ export default function AdminLayout({
               <Link 
                 key={item.href}
                 href={item.href} 
+                onClick={() => setIsSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-4 px-5 py-4 rounded-[1.25rem] transition-all duration-300 group",
                   isActive 
