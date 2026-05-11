@@ -87,10 +87,21 @@ function ChatContent() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !currentUser) return;
+    if (!input.trim()) return;
+    if (!currentUser) {
+      toast.error("Data user belum siap, tunggu sebentar...");
+      return;
+    }
 
     const messageContent = input.trim();
     setInput("");
+
+    console.log("Mencoba kirim pesan:", {
+      room_name: activeRoom,
+      user_id: currentUser.id,
+      user_name: currentUser.full_name,
+      content: messageContent,
+    });
 
     const { error } = await supabase
       .from('messages')
@@ -102,8 +113,8 @@ function ChatContent() {
       });
 
     if (error) {
-      toast.error("Gagal mengirim pesan");
-      console.error(error);
+      console.error("Gagal kirim pesan:", error);
+      toast.error(`Gagal: ${error.message} (${error.code})`);
     }
   };
 
