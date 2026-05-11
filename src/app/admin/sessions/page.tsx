@@ -20,6 +20,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export default function ModerateCircles() {
   const router = useRouter();
   const [circles, setCircles] = useState<any[]>([]);

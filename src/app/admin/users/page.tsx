@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/Form";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export default function ManageUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
