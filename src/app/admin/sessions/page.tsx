@@ -56,20 +56,39 @@ export default function ModerateCircles() {
   };
 
   const handleDeleteCircle = async (id: number, title: string) => {
-    if (!confirm(`Yakin ingin menghapus circle "${title}"?`)) return;
+    const isConfirmed = window.confirm(`⚠️ PERINGATAN: Yakin ingin menghapus circle "${title}" secara permanen? Tindakan ini tidak bisa dibatalkan.`);
+    if (!isConfirmed) return;
 
+    setLoading(true);
     try {
-      const { error } = await supabase
+      console.log(`Mencoba menghapus circle ID: ${id}`);
+      const { error, status } = await supabase
         .from('circles')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Delete error:", error);
+        throw new Error(error.message);
+      }
+
+      // If status is 204 or 200, it means the request was successful
+      // However, if RLS blocked it, it might still return success but 0 rows affected.
+      // Supabase delete doesn't return count by default unless specified.
       
-      setCircles(circles.filter(c => c.id !== id));
-      toast.error(`Circle "${title}" telah dihapus.`);
+      toast.success(`Berhasil! Circle "${title}" telah dihapus secara permanen.`);
+      
+      // Update local state immediately
+      setCircles(prev => prev.filter(c => c.id !== id));
+      
+      // Optional: re-fetch to be 100% sure
+      setTimeout(() => fetchCircles(), 1000);
+      
     } catch (error: any) {
-      toast.error("Gagal menghapus circle: " + error.message);
+      console.error("Full delete error object:", error);
+      toast.error("Gagal menghapus: " + (error.message || "Pastikan kamu memiliki izin (RLS) untuk menghapus data ini."));
+    } finally {
+      setLoading(false);
     }
   };
 

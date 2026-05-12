@@ -174,25 +174,18 @@ export default function AuthPage() {
                 <span className="w-full border-t border-gray-100"></span>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white/40 px-2 text-gray-400 backdrop-blur-sm">Opsi lainnya</span>
+                <span className="bg-white/40 px-2 text-gray-400 backdrop-blur-sm italic">Masuk lebih cepat</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="w-full">
               <button 
                 type="button"
                 onClick={handleGoogleLogin}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white/50 px-4 py-2.5 text-sm font-medium transition-all hover:bg-white active:scale-95"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white/50 px-4 py-3 text-sm font-medium transition-all hover:bg-white active:scale-95 shadow-sm"
               >
                 <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
-                Google
-              </button>
-              <button 
-                type="button"
-                className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white/50 px-4 py-2.5 text-sm font-medium transition-all hover:bg-white active:scale-95"
-              >
-                <img src="https://assets-global.website-files.com/6257adef93867e3d0394e366/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" alt="Discord" className="h-4 w-4" />
-                Discord
+                {isLogin ? "Masuk dengan Google" : "Daftar dengan Google"}
               </button>
             </div>
           </div>
@@ -207,27 +200,9 @@ export default function AuthPage() {
             </button>
           </p>
 
-          {isLogin && (
-            <div className="mt-8 pt-8 border-t border-white/30 text-center">
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-4">Demo Access</p>
-              <div className="flex justify-center gap-2">
-                <button 
-                  type="button"
-                  onClick={() => setFormData({ fullName: '', email: 'admin@ambis.com', password: 'password123' })}
-                  className="px-3 py-1 bg-white/50 rounded-lg text-[10px] font-bold hover:bg-white transition-colors"
-                >
-                  Admin Account
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setFormData({ fullName: '', email: 'user@ambis.com', password: 'password123' })}
-                  className="px-3 py-1 bg-white/50 rounded-lg text-[10px] font-bold hover:bg-white transition-colors"
-                >
-                  User Account
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="mt-12 text-center">
+              <p className="text-[10px] text-gray-300 font-bold tracking-widest uppercase">© 2026 AmbisCircle — Solusi Produktif</p>
+          </div>
         </motion.div>
       </AnimatePresence>
 

@@ -19,16 +19,14 @@ function ChatContent() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [rooms, setRooms] = useState<string[]>(["General", "Belajar Bareng", "Diskusi Tugas"]);
+  const [rooms, setRooms] = useState<string[]>(["General"]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchUser();
+    fetchRooms();
     if (roomParam) {
       setActiveRoom(roomParam);
-      if (!rooms.includes(roomParam)) {
-        setRooms(prev => [roomParam, ...prev]);
-      }
     }
   }, [roomParam]);
 
@@ -65,7 +63,24 @@ function ChatContent() {
     if (error) console.error("Error fetching messages:", error);
   };
 
+  const fetchRooms = async () => {
+    const { data: circles } = await supabase
+      .from('circles')
+      .select('title')
+      .limit(20);
+    
+    if (circles) {
+      const roomTitles = circles.map(c => c.title);
+      setRooms(prev => Array.from(new Set(["General", ...roomTitles])));
+    }
+  };
+
   const subscribeToMessages = () => {
+    // Request notification permission
+    if (typeof window !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     const channel = supabase
       .channel(`room-${activeRoom}`)
       .on(
@@ -77,7 +92,21 @@ function ChatContent() {
           filter: `room_name=eq.${activeRoom}`,
         },
         (payload) => {
-          setMessages((current) => [...current, payload.new]);
+          const newMessage = payload.new;
+          setMessages((current) => [...current, newMessage]);
+
+          // Show notification if message is from someone else
+          if (newMessage.user_id !== currentUser?.id) {
+            if (typeof window !== 'undefined' && Notification.permission === 'granted') {
+              new Notification(`Pesan baru di #${activeRoom}`, {
+                body: `${newMessage.user_name}: ${newMessage.content}`,
+                icon: '/favicon.ico'
+              });
+            }
+            // Play notification sound
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audio.play().catch(e => console.log("Sound blocked by browser"));
+          }
         }
       )
       .subscribe();

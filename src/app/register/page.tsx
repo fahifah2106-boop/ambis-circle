@@ -56,12 +56,46 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     
-    // Simulate Supabase Register
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Akun berhasil dibuat! Silakan login.");
+    try {
+      // 1. Sign Up User
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            username: formData.username
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // 2. Create Profile in 'profiles' table
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            full_name: formData.fullName,
+            username: formData.username,
+            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${authData.user.id}`
+          });
+        
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          // We don't throw here to allow user to still login if profile creation failed but auth succeeded
+        }
+      }
+
+      toast.success("Akun berhasil dibuat! Silakan cek email atau langsung login.");
       router.push("/login");
-    }, 2000);
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast.error(error.message || "Gagal membuat akun. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -148,18 +182,14 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="w-full">
             <button 
               type="button"
               onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
             >
               <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
-              Google
-            </button>
-            <button type="button" className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95">
-              <img src="https://assets-global.website-files.com/6257adef93867e3d0394e366/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" alt="Discord" className="h-4 w-4" />
-              Discord
+              Daftar dengan Google
             </button>
           </div>
         </div>
@@ -170,6 +200,10 @@ export default function RegisterPage() {
             Login di sini
           </Link>
         </p>
+
+        <div className="mt-10 text-center">
+            <p className="text-[10px] text-gray-300 font-bold tracking-widest uppercase">© 2026 AmbisCircle — Solusi Produktif</p>
+        </div>
       </motion.div>
     </div>
   );

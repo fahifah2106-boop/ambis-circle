@@ -35,9 +35,15 @@ export default function ProfilePage() {
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=user",
     email: ""
   });
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    followers: 0,
+    rating: 0
+  });
 
   useEffect(() => {
     fetchProfile();
+    fetchStats();
   }, []);
 
   const fetchProfile = async () => {
@@ -68,6 +74,30 @@ export default function ProfilePage() {
       console.error("Error fetching profile:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Real Sessions Count (Circles created by this user)
+      const { count: sessionCount } = await supabase
+        .from('circles')
+        .select('*', { count: 'exact', head: true })
+        .eq('creator_id', user.id);
+      
+      const count = sessionCount || 0;
+
+      setStats({
+        totalSessions: count,
+        followers: 0,
+        rating: 0.0,
+        level: count >= 5 ? "Ambis Master" : "Ambis Member"
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
     }
   };
 
@@ -187,19 +217,26 @@ export default function ProfilePage() {
                         <h2 className="text-xl font-bold text-gray-800">{profile.name || "Si Ambis"}</h2>
                         <p className="text-sm text-gray-500">@{profile.username}</p>
                     </div>
-                    <div className="flex justify-center gap-2">
-                        <div className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-lg text-[10px] font-bold flex items-center gap-1">
-                            <Award className="h-3 w-3" /> Pro Member
+                    <div className="flex flex-col items-center gap-2">
+                        <div className={`px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${stats.totalSessions >= 5 ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'}`}>
+                            <Award className="h-3 w-3" /> {stats.totalSessions >= 5 ? 'Ambis Master' : 'Ambis Member'}
                         </div>
+                        <p className="text-[9px] text-gray-300 font-bold uppercase tracking-tighter">Verified Real Data v2.2</p>
+                        <button 
+                            onClick={() => window.location.reload()}
+                            className="mt-2 text-[8px] bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 text-gray-500 font-bold"
+                        >
+                            🔄 Paksa Update Tampilan
+                        </button>
                     </div>
                 </div>
 
                 <div className="glass p-6 rounded-[2.5rem] space-y-2">
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-2 mb-4">Statistik</h3>
                     {[
-                        { label: 'Total Sesi', value: '42', icon: Clock, color: 'text-peach' },
-                        { label: 'Followers', value: '128', icon: User, color: 'text-lavender' },
-                        { label: 'Rating', value: '4.9', icon: Star, color: 'text-yellow-500' },
+                        { label: 'Total Sesi', value: stats.totalSessions.toString(), icon: Clock, color: 'text-peach' },
+                        { label: 'Followers', value: stats.followers.toString(), icon: User, color: 'text-lavender' },
+                        { label: 'Rating', value: stats.rating.toString(), icon: Star, color: 'text-yellow-500' },
                     ].map((stat) => (
                         <div key={stat.label} className="flex justify-between items-center p-3 rounded-2xl hover:bg-white/50 transition-all">
                             <div className="flex items-center gap-3">

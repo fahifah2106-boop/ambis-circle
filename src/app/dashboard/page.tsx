@@ -43,9 +43,21 @@ export default function UserDashboard() {
         if (profile?.full_name) {
           setUserName(profile.full_name);
         }
+
+        // Fetch User's Specific Stats
+        const { count: myCirclesCount } = await supabase
+          .from('circles')
+          .select('*', { count: 'exact', head: true })
+          .eq('creator_id', user.id);
+        
+        setUserStats(prev => ({ 
+          ...prev, 
+          activeCircles: myCirclesCount || 0,
+          level: (myCirclesCount || 0) > 5 ? "Ambis Master" : "Ambis Member"
+        }));
       }
 
-      // Fetch Real Sessions
+      // Fetch Real Sessions (Global/Recommended)
       const { data: circles } = await supabase
         .from('circles')
         .select('*')
@@ -62,10 +74,16 @@ export default function UserDashboard() {
     }
   };
 
+  const [userStats, setUserStats] = useState({
+    followedSessions: 0,
+    activeCircles: 0,
+    level: "Ambis Member"
+  });
+
   const stats = [
-    { label: "Sesi Diikuti", value: "0", icon: Calendar, color: "bg-peach" },
-    { label: "Circle Aktif", value: sessions.length.toString(), icon: Users, color: "bg-lavender" },
-    { label: "Level Ambis", value: "Pro", icon: Award, color: "bg-yellow-400" },
+    { label: "Sesi Diikuti", value: userStats.followedSessions.toString(), icon: Calendar, color: "bg-peach" },
+    { label: "Circle Saya", value: userStats.activeCircles.toString(), icon: Users, color: "bg-lavender" },
+    { label: "Level Ambis", value: userStats.level, icon: Award, color: "bg-yellow-400" },
   ];
 
   if (loading) {
@@ -132,54 +150,52 @@ export default function UserDashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sessions.map((session, i) => (
-              <motion.div 
-                key={session.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.1 + 0.3 }}
-                whileHover={{ y: -5 }}
-                className="bg-white p-6 rounded-[2rem] shadow-soft border border-gray-50 group transition-all"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-peach/10 text-peach text-[10px] font-bold uppercase tracking-wider">
-                      {session.category}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold">
-                    <Clock className="h-3 w-3" /> {new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </div>
-                
-                <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-peach transition-colors line-clamp-1">{session.title}</h3>
-                <p className="text-xs text-gray-400 mb-4 italic">Dibuat oleh {session.creator_name || "Si Ambis"}</p>
-
-                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                  <div className="flex -space-x-2">
-                    {[1,2,3].map(i => (
-                      <div key={i} className="h-7 w-7 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + session.id}`} alt="participant" />
-                      </div>
-                    ))}
-                    <div className="h-7 w-7 rounded-full border-2 border-white bg-peach/10 text-peach text-[8px] font-bold flex items-center justify-center">
-                      +{session.members || 1}
-                    </div>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-xl group-hover:bg-peach group-hover:text-white transition-all"
-                    onClick={() => {
-                      toast.success(`Berhasil join ke sesi ${session.title}!`);
-                      setTimeout(() => {
-                        window.location.href = `/chat?room=${encodeURIComponent(session.title)}`;
-                      }, 1000);
-                    }}
+                <Link 
+                  key={session.id}
+                  href={`/chat?room=${encodeURIComponent(session.title)}`}
+                  className="block w-full group"
+                >
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.1 + 0.3 }}
+                    whileHover={{ y: -5 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="bg-white p-6 rounded-[2rem] shadow-soft border border-gray-50 transition-all cursor-pointer hover:shadow-lg h-full"
                   >
-                    Join
-                  </Button>
-                </div>
-              </motion.div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full bg-peach/10 text-peach text-[10px] font-bold uppercase tracking-wider">
+                          {session.category}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold">
+                        <Clock className="h-3 w-3" /> {new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-peach transition-colors line-clamp-1">{session.title}</h3>
+                    <p className="text-xs text-gray-400 mb-4 italic">Dibuat oleh {session.creator_name || "Si Ambis"}</p>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                      <div className="flex -space-x-2">
+                        {[1,2,3].map(i => (
+                          <div key={i} className="h-7 w-7 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + session.id}`} alt="participant" />
+                          </div>
+                        ))}
+                        <div className="h-7 w-7 rounded-full border-2 border-white bg-peach/10 text-peach text-[8px] font-bold flex items-center justify-center">
+                          +{session.members || 1}
+                        </div>
+                      </div>
+                      <div 
+                        className="px-4 py-2 rounded-xl text-xs font-bold border border-gray-100 group-hover:bg-peach group-hover:text-white group-hover:border-peach transition-all"
+                      >
+                        Join
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
             ))}
           </div>
 

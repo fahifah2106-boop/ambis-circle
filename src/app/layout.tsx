@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AmbisCircle 📚✨ | Platform Produktif Gen Z",
   description: "Cari teman belajar, partner nugas, dan circle produktif berdasarkan minat yang sama. Platform sosial modern untuk Gen Z.",
+  manifest: "/manifest.json",
 };
 
 import { Toaster } from "sonner";

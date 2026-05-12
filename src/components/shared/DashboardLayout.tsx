@@ -15,6 +15,8 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Toaster, toast } from "sonner";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function DashboardLayout({
   children,
@@ -23,6 +25,44 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [userProfile, setUserProfile] = useState({
+    name: "User Ambis",
+    email: "user@ambis.com",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=user"
+  });
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) {
+        setUserProfile({
+          name: profile.full_name || "User Ambis",
+          email: user.email || "user@ambis.com",
+          avatar: profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
+        });
+      } else {
+        setUserProfile(prev => ({ ...prev, email: user.email || "user@ambis.com" }));
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.info("Berhasil keluar...");
+    setTimeout(() => {
+        router.push("/");
+    }, 1000);
+  };
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -32,13 +72,6 @@ export default function DashboardLayout({
     { icon: MessageSquare, label: "Chat Room", href: "/chat" },
     { icon: User, label: "Profil", href: "/profile" },
   ];
-
-  const handleLogout = () => {
-    toast.info("Logging out...");
-    setTimeout(() => {
-        router.push("/");
-    }, 1000);
-  };
 
   return (
     <div className="min-h-screen bg-cream-light flex">
@@ -77,11 +110,11 @@ export default function DashboardLayout({
         <div className="p-4 mt-auto">
           <Link href="/profile" className="bg-white/50 rounded-2xl p-4 mb-4 flex items-center gap-3 border border-white/50 hover:bg-white hover:shadow-soft transition-all group">
              <div className="h-10 w-10 rounded-full bg-lavender/30 overflow-hidden shrink-0">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="Avatar" />
+                <img src={userProfile.avatar} alt="Avatar" />
              </div>
              <div className="overflow-hidden">
-                <p className="text-sm font-bold truncate group-hover:text-peach transition-colors">User Ambis</p>
-                <p className="text-[10px] text-gray-500 truncate">user@ambis.com</p>
+                <p className="text-sm font-bold truncate group-hover:text-peach transition-colors">{userProfile.name}</p>
+                <p className="text-[10px] text-gray-500 truncate">{userProfile.email}</p>
              </div>
           </Link>
           <button 

@@ -37,20 +37,24 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate Auth
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      if (formData.email === "admin@ambis.com") {
-        toast.success("Welcome back, Admin!");
-        router.push("/admin");
-      } else if (formData.email && formData.password.length >= 8) {
-        toast.success("Login berhasil! Selamat datang.");
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast.success("Login berhasil! Selamat datang kembali.");
         router.push("/dashboard");
-      } else {
-        toast.error("Email atau password salah. Coba lagi.");
       }
-    }, 1500);
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error(error.message || "Email atau password salah. Coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -113,18 +117,14 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="w-full">
             <button 
               type="button"
               onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
             >
               <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
-              Google
-            </button>
-            <button type="button" className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium transition-all hover:bg-gray-50 active:scale-95">
-              <img src="https://assets-global.website-files.com/6257adef93867e3d0394e366/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" alt="Discord" className="h-4 w-4" />
-              Discord
+              Masuk dengan Google
             </button>
           </div>
         </div>
@@ -136,22 +136,8 @@ export default function LoginPage() {
           </Link>
         </p>
 
-        <div className="mt-8 pt-8 border-t border-white/30 text-center">
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-4">Demo Access</p>
-            <div className="flex justify-center gap-2">
-                <button 
-                    onClick={() => setFormData({ email: 'admin@ambis.com', password: 'password123' })}
-                    className="px-3 py-1 bg-white/50 rounded-lg text-[10px] font-bold hover:bg-white"
-                >
-                    Admin Account
-                </button>
-                <button 
-                    onClick={() => setFormData({ email: 'user@ambis.com', password: 'password123' })}
-                    className="px-3 py-1 bg-white/50 rounded-lg text-[10px] font-bold hover:bg-white"
-                >
-                    User Account
-                </button>
-            </div>
+        <div className="mt-12 text-center">
+            <p className="text-[10px] text-gray-300 font-bold tracking-widest uppercase">© 2026 AmbisCircle — Solusi Produktif</p>
         </div>
       </motion.div>
     </div>

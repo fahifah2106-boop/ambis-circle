@@ -1,0 +1,21 @@
+{
+  "name": "AmbisCircle",
+  "short_name": "AmbisCircle",
+  "description": "Gen Z Productivity & Study Social Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF8F3",
+  "theme_color": "#FF8E7E",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/avataaars/svg?seed=Ambis",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/avataaars/svg?seed=Ambis",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
